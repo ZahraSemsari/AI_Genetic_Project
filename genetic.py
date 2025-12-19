@@ -1,4 +1,6 @@
 import random
+import math
+random.seed(42)
 
 class TreeNode():
     def __init__(self):
@@ -21,8 +23,8 @@ def create_input() :
 
         output = input * input + 2 * input + 1
         input_output[input] = output 
-    print(input_output)
-
+    # print(input_output)
+    return input_output
 # print(create_input())
 
 
@@ -36,35 +38,50 @@ def create_trees() :
         for c_n , c in enumerate(root.child) : 
             print(f"{root.value} childNumber {c_n} with value {c.value}") 
             print_tree(c)
-            
+
 
     def create_tree(root, depth , max_depth) :
         while(depth < max_depth) :
             if root.value[0] == 'operator' :
+                if root.value[1] != 'sin' and root.value[0] != 'cos':
+                    first_child = TreeNode()
+                    rand_node1 = random.randint(0,1)
+                    if rand_node1 == 0 and depth != max_depth-1:
+                        rand1 = random.randint(0,len(OPERATOR_COEFFICIENT['operator']) -1) 
+                    else: 
+                        rand_node1 = 1
+                        rand1 = random.randint(0,len(OPERATOR_COEFFICIENT['operand']) -1)
 
-                first_child = TreeNode()
-                rand_node1 = random.randint(0,1)
-                if rand_node1 == 0 and depth != max_depth-1:
-                    rand1 = random.randint(0,len(OPERATOR_COEFFICIENT['operator']) -1) 
-                else : 
-                    rand1 = random.randint(0,len(OPERATOR_COEFFICIENT['operand']) -1)
 
+                    second_child = TreeNode()
+                    rand_node2 = random.randint(0,1)
+                    if rand_node2 == 0 and depth != max_depth-1:
+                        rand2 = random.randint(0,len(OPERATOR_COEFFICIENT['operator'])-1) 
+                    else : 
+                        rand_node2 = 1
+                        rand2 = random.randint(0,len(OPERATOR_COEFFICIENT['operand'])-1)
 
-                second_child = TreeNode()
-                rand_node2 = random.randint(0,1)
-                if rand_node2 == 0 and depth != max_depth-1:
-                    rand2 = random.randint(0,len(OPERATOR_COEFFICIENT['operator'])-1) 
-                else : 
-                    rand2 = random.randint(0,len(OPERATOR_COEFFICIENT['operand'])-1)
+                    first_child.value = [NODE_KEY[rand_node1] , OPERATOR_COEFFICIENT[NODE_KEY[rand_node1]][rand1]]
+                    second_child.value = [NODE_KEY[rand_node2] , OPERATOR_COEFFICIENT[NODE_KEY[rand_node2]][rand2]]
+                    child1 = create_tree(first_child , depth + 1 , max_depth)
+                    child2 = create_tree(second_child , depth + 1 , max_depth)
+                    root.child.append(child1)
+                    root.child.append(child2)
+                
+                else :
+                    first_child = TreeNode()
+                    rand_node1 = random.randint(0,1)
+                    if rand_node1 == 0 and depth != max_depth-1:
+                        rand1 = random.randint(0,len(OPERATOR_COEFFICIENT['operator']) -1) 
+                    else : 
+                        rand1 = random.randint(0,len(OPERATOR_COEFFICIENT['operand']) -1)
 
-                first_child.value = [NODE_KEY[rand_node1] , OPERATOR_COEFFICIENT[NODE_KEY[rand_node1]][rand1]]
-                second_child.value = [NODE_KEY[rand_node2] , OPERATOR_COEFFICIENT[NODE_KEY[rand_node2]][rand2]]
-                child1 = create_tree(first_child , depth + 1 , max_depth)
-                child2 = create_tree(second_child , depth + 2 , max_depth)
-                root.child.append(child1)
-                root.child.append(child2)
-
-            return root
+                    first_child.value = [NODE_KEY[rand_node1] , OPERATOR_COEFFICIENT[NODE_KEY[rand_node1]][rand1]]
+                    child1 = create_tree(first_child , depth + 1 , max_depth)
+                    root.child.append(child1)
+                return root
+            else :
+                return root
         return root 
 
 
@@ -78,10 +95,10 @@ def create_trees() :
         root.value = ['operator',OPERATOR_COEFFICIENT['operator'][rand]]
         root = create_tree(root , depth , max_depth)
         functions.append(root)
-        print_tree(root)
+    
+    print_tree(root)
+    return functions
 
 
-create_trees()            
-
-
+# create_trees()            
 
