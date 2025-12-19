@@ -22,8 +22,8 @@ def create_input() :
                 input = i
 
         output = input * input + 2 * input + 1
-        input_output[input] = output 
-    # print(input_output)
+        input_output[input] = float(output) 
+    print(input_output)
     return input_output
 # print(create_input())
 
@@ -102,3 +102,58 @@ def create_trees() :
 
 # create_trees()            
 
+
+def compute_fitness() :
+    def compute_MSE(ouput , input) :
+        for index,i in enumerate(input) :
+            MSE = (output[index] - input[i]) ** 2
+        MSE = MSE / len(input)
+        return MSE 
+        
+
+    def compute_fitnes(func , input) : 
+        if len(func.child) == 0 :
+            if func.value[1] == 'x' :
+                return float(input)
+            else :
+                return func.value[1] 
+        
+        child_num = len(func.child)
+
+        if child_num == 2 :
+            first_opernad = float(compute_fitnes(func.child[0] , input))
+            second_operand = float(compute_fitnes(func.child[1] , input))
+            if func.value[1] == '*' :
+                return first_opernad * second_operand
+            elif func.value[1] == '+' :
+                return first_opernad + second_operand            
+            elif func.value[1] == '-' :
+                return first_opernad - second_operand            
+            elif func.value[1] == '/' :
+                return first_opernad / second_operand            
+            elif func.value[1] == 'pow' :
+                return first_opernad ** second_operand   
+        else :
+            first_opernad = float(compute_fitnes(func.child[0] , input))
+            if func.value[1] == 'sin' :
+                return math.sin(first_opernad)
+            elif func.value[1] == 'cos' :
+                return math.cos(first_opernad)
+
+
+
+
+    functions = create_trees()
+    input = create_input()
+    output = []
+    mse_arr = []
+
+    for f in functions :
+        for i in input:
+            output.append(compute_fitnes(f , i))
+        print(output)
+        mse = compute_MSE(output , input)
+        mse_arr.append(mse)
+    print(mse_arr)
+
+compute_fitness()
