@@ -1,13 +1,11 @@
 import random
 import math
-import matplotlib.pyplot as plt
 
-
-NUM_FINCTIONS = 100
+NUM_FINCTIONS = 20
 MAX_DEPTH = 6
-THRESHOLD = 500
+THRESHOLD = 500  
 
-INPUT_SEED = 42
+INPUT_SEED = 42          
 
 PM_SUBTREE = 0.1
 PM_POINT   = 0.20
@@ -26,15 +24,19 @@ def protected_pow(a, b):
             if abs(b - round(b)) > 1e-9:
                 return 1.0
             b = int(round(b))
+
         val = a ** b
+
         if isinstance(val, complex):
             return 1.0
+
         val = float(val)
         if abs(val) > 1e6:
             return 1e6 if val > 0 else -1e6
         return val
     except:
         return 1.0
+
 
 def protected_sin(x):
     if isinstance(x, complex):
@@ -44,6 +46,7 @@ def protected_sin(x):
     except:
         return 0.0
 
+
 def protected_cos(x):
     if isinstance(x, complex):
         return 0.0
@@ -52,69 +55,29 @@ def protected_cos(x):
     except:
         return 0.0
 
-def protected_sqrt(x):
-    if isinstance(x, complex):
-        return 0.0
-    try:
-        return math.sqrt(abs(x))
-    except:
-        return 0.0
-    
-
-def eval_tree(func, x):
-    if len(func.child) == 0:
-        return float(x) if func.value[1] == "x" else func.value[1]
-
-    if len(func.child) == 2:
-        a = eval_tree(func.child[0], x)
-        b = eval_tree(func.child[1], x)
-
-        if func.value[1] == "*":
-            return a * b
-        elif func.value[1] == "+":
-            return a + b
-        elif func.value[1] == "-":
-            return a - b
-        elif func.value[1] == "/":
-            if b == 0 or abs(b) < 1e-6:
-                return 1.0
-            return a / b
-        elif func.value[1] == "pow":
-            return protected_pow(a, b)
-
-    else:
-        a = eval_tree(func.child[0], x)
-        if func.value[1] == "sin":
-            return protected_sin(a)
-        elif func.value[1] == "cos":
-            return protected_cos(a)
-        elif func.value[1] == "sqrt":
-            return protected_sqrt(a)
-
-def target_func(x):
-    return 0.2 * x + math.sin(3 * x)
-
 def create_input():
     input_output = {}
-    fixed = [float(i) for i in range(-100, 101)]
 
+    fixed = [0.0, 0.01, 0.1, 1.0,3.0 , 4.0, 5.0 , 11.0, 9.0, 3.0, 4.0, 6.0, 7.0, 8.0 , 9.5, 10.0 , -1.0 , -0.1 , -2.0 , -3.0 , -4.0 , -5.0 , -6.0]
+    
     for x in fixed:
-        y = target_func(x)
+        
+        y = x + 3 
         input_output[round(x, 6)] = float(y)
 
-    while len(input_output) < 1000:
-        x = round(random.uniform(-100, 100), 6)
+    while len(input_output) < 70:
+        x = round(random.uniform(0, 10), 6)
         if x in input_output:
             continue
-        y = target_func(x)
+        y = x + 3 
         input_output[x] = float(y)
 
     return input_output
 
 
 OPERATOR_COEFFICIENT = {
-    "operator": ["*", "+", "-", "/", "pow", "sin", "cos", "sqrt"],
-    "operand":  [0, 1, 2, 3, 4, 5, 0.1 , 0.2 , 0.3 ,"x"]
+    "operator": ["*", "+", "-", "/", "pow", "sin", "cos"],
+    "operand":  [0, 1, 2, 3, 4, 5, "x"]
 }
 NODE_KEY = ["operator", "operand"]
 
@@ -122,7 +85,7 @@ def create_trees():
     def create_tree(root, depth, max_depth):
         while depth < max_depth:
             if root.value[0] == "operator":
-                if root.value[1] not in ("sin", "cos", "sqrt"):
+                if root.value[1] not in ("sin", "cos"):
                     first_child = TreeNode()
                     rand_node1 = random.randint(0, 1)
                     if rand_node1 == 0 and depth != max_depth - 1:
@@ -168,6 +131,7 @@ def create_trees():
                 return root
             else:
                 return root
+
         return root
 
     functions = []
@@ -216,8 +180,6 @@ def compute_fitness(functions, input_data):
                 return protected_sin(a)
             elif func.value[1] == "cos":
                 return protected_cos(a)
-            elif func.value[1] == "sqrt":
-                return protected_sqrt(a)
 
     mse_arr = []
     for f in functions:
@@ -228,6 +190,15 @@ def compute_fitness(functions, input_data):
 
     return mse_arr
 
+
+def print_tree(root):
+    if root is None:
+        return
+    for c_n, c in enumerate(root.child):
+        print(f"{root.value} childNumber {c_n} with value {c.value}")
+        print_tree(c)
+
+
 def tree_to_expr(node):
     if node is None:
         return "None"
@@ -237,7 +208,7 @@ def tree_to_expr(node):
 
     op = node.value[1]
 
-    if op in ("sin", "cos", "sqrt"):
+    if op in ("sin", "cos"):
         return f"{op}({tree_to_expr(node.child[0])})"
 
     a = tree_to_expr(node.child[0])
@@ -359,7 +330,7 @@ def make_generation(functions, input_data, THRESHOLD):
         op = random.choice(OPERATOR_COEFFICIENT["operator"])
         node.value = ["operator", op]
 
-        if op in ("sin", "cos", "sqrt"):
+        if op in ("sin", "cos"):
             child = gen_random_subtree(cur_depth + 1, parent=node)
             node.child.append(child)
         else:
@@ -376,7 +347,7 @@ def make_generation(functions, input_data, THRESHOLD):
             return
 
         binary_ops = ["*", "+", "-", "/", "pow"]
-        unary_ops = ["sin", "cos", "sqrt"]
+        unary_ops = ["sin", "cos"]
 
         if n.value[0] == "operand":
             n.value = ["operand", random.choice(OPERATOR_COEFFICIENT["operand"])]
@@ -430,9 +401,11 @@ def make_generation(functions, input_data, THRESHOLD):
             n1 = count_nodes(t1)
             n2 = count_nodes(t2)
             min_n = min(n1, n2)
+            
 
             if n1 >= 2 and n2 >= 2:
                 c1 = random.randint(2, min_n)
+                # c2 = random.randint(2, n2)
                 t1, t2 = swap_subtrees(t1, t2, c1, c1)
 
             mutation(t1)
@@ -441,6 +414,7 @@ def make_generation(functions, input_data, THRESHOLD):
             new_functions.append(t1)
             new_functions.append(t2)
 
+        # elitism
         new_functions[-1] = clone_tree(best_tree)
 
         mse_new = compute_fitness(new_functions, input_data)
@@ -464,44 +438,6 @@ random.seed()
 functions = create_trees()
 _, best_tree, best_mse = make_generation(functions, input_data, THRESHOLD)
 
+print_tree(best_tree)
 print(f"Best MSE after {THRESHOLD} generations is {best_mse}")
 print("Best expression found:", tree_to_expr(best_tree))
-
-
-xs_data = sorted(input_data.keys())
-ys_data = [input_data[x] for x in xs_data]
-
-xmin, xmax = xs_data[0], xs_data[-1]
-n = 2000
-xs = [xmin + (xmax - xmin) * i / n for i in range(n + 1)]
-
-ys_true = [target_func(x) for x in xs]
-ys_pred = []
-for x in xs:
-    y = eval_tree(best_tree, x)
-    if (not math.isfinite(y)) or abs(y) > 50:
-        y = float("nan")
-    ys_pred.append(y)
-
-
-fig, ax = plt.subplots(1, 2, figsize=(12, 4))
-
-ax[0].scatter(xs_data, ys_data, s=6, alpha=0.6, color="tab:blue", label="samples")
-ax[0].plot(xs, ys_true, color="tab:orange", linewidth=2, label="true f(x)")
-ax[0].set_title("Ground truth (data source)")
-ax[0].set_xlabel("x")
-ax[0].set_ylabel("y")
-ax[0].grid(True)
-ax[0].legend()
-
-ax[1].scatter(xs_data, ys_data, s=6, alpha=0.25, color="tab:gray", label="samples")
-ax[1].plot(xs, ys_pred, color="tab:green", linewidth=2, label="GP best")
-ax[1].set_title("GP output")
-ax[1].set_xlabel("x")
-ax[1].set_ylabel("y")
-ax[1].grid(True)
-ax[1].legend()
-
-plt.tight_layout()
-plt.savefig("compare_2plots.png", dpi=300, bbox_inches="tight")
-plt.show()
