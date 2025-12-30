@@ -2,14 +2,14 @@ import random
 import math
 import matplotlib.pyplot as plt
 
-NUM_FINCTIONS = 120
+NUM_FINCTIONS = 100
 MAX_DEPTH = 5
 THRESHOLD = 500
 
 INPUT_SEED = 42
 
-PM_SUBTREE = 0.1
-PM_POINT   = 0.20
+CHANGE_ALL_SUB = 0.1
+CHANGE_POINT   = 0.20
 
 class TreeNode:
     def __init__(self):
@@ -59,13 +59,13 @@ def protected_sqrt(x):
     except:
         return 0.0
 
-def eval_tree(func, x):
+def compute_tree_output(func, x):
     if len(func.child) == 0:
         return float(x) if func.value[1] == "x" else float(func.value[1])
 
     if len(func.child) == 2:
-        a = eval_tree(func.child[0], x)
-        b = eval_tree(func.child[1], x)
+        a = compute_tree_output(func.child[0], x)
+        b = compute_tree_output(func.child[1], x)
 
         op = func.value[1]
         if op == "*":
@@ -83,7 +83,7 @@ def eval_tree(func, x):
 
         return 1.0
 
-    a = eval_tree(func.child[0], x)
+    a = compute_tree_output(func.child[0], x)
     op = func.value[1]
     if op == "sin":
         return protected_sin(a)
@@ -94,7 +94,7 @@ def eval_tree(func, x):
     return 1.0
 
 def target_func(x):
-    return x * x + math.sin(3 * x) 
+    return 0.2 * x + math.sin(3*x) + 5
 
 def create_input():
     input_output = {}
@@ -114,13 +114,13 @@ def create_input():
     return input_output
 
 OPERATOR_COEFFICIENT = {
-    "operator": ["*", "+", "-", "/", "pow", "sin", "cos", "sqrt"],
+    "operator": [ "pow" , "sin" , "cos" , "+", "-" , "sqrt"], #, ,"*", "/" 
     "operand":  [0, 1, 2, 3, 4, 5, 0.1, 0.2, 0.3, "x"]
 }
 NODE_KEY = ["operator", "operand"]
 
 def create_trees():
-    unary_ops = ("sin", "cos", "sqrt")
+    unary_ops = (  "sin", "cos") #,"sqrt" 
 
     def pick_value(depth, max_depth):
         rand_node = random.randint(0, 1)
@@ -187,7 +187,7 @@ def tree_to_expr(node):
     return f"{op}({a},{b})"
 
 def make_generation(functions, input_data, THRESHOLD):
-    unary_ops = ("sin", "cos", "sqrt")
+    unary_ops = ( "sin", "cos")# ,"sqrt"
 
     def clone_tree(node, parent=None):
         if node is None:
@@ -223,12 +223,11 @@ def make_generation(functions, input_data, THRESHOLD):
                 best_val = mse[i]
         return best_i
 
-    def build_parent_pool(mse, pool_size):
-        return [tournament_pick(mse, k=3) for _ in range(pool_size)]
+    def choose_rand_pop(mse, parent_size):
+        return [tournament_pick(mse, k=3) for _ in range(parent_size)]
 
     def swap_subtrees(t1, t2, c1, c2):
         count = 0
-
         def dfs(t, target):
             nonlocal count
             if t is None:
@@ -314,8 +313,8 @@ def make_generation(functions, input_data, THRESHOLD):
         if n is None:
             return
 
-        binary_ops = ["*", "+", "-", "/", "pow"]
-        unary_list = ["sin", "cos", "sqrt"]
+        binary_ops = ["pow" , "+", "-"]  # "*", "/",
+        unary_list = [  "sin", "cos" , "sqrt",] 
 
         if n.value[0] == "operand":
             n.value = ["operand", random.choice(OPERATOR_COEFFICIENT["operand"])]
@@ -344,9 +343,9 @@ def make_generation(functions, input_data, THRESHOLD):
 
     def mutation(tree_root):
         r = random.random()
-        if r < PM_SUBTREE:
+        if r < CHANGE_POINT:
             subtree_mutation(tree_root)
-        elif r < PM_SUBTREE + PM_POINT:
+        elif r < CHANGE_POINT + CHANGE_ALL_SUB:
             point_mutation(tree_root)
 
     items = list(input_data.items())
@@ -357,7 +356,7 @@ def make_generation(functions, input_data, THRESHOLD):
         for f in pop:
             mse = 0.0
             for x, y in items:
-                d = eval_tree(f, x) - y
+                d = compute_tree_output(f, x) - y
                 mse += d * d
             mse_arr.append(mse / n_items)
         return mse_arr
@@ -369,11 +368,13 @@ def make_generation(functions, input_data, THRESHOLD):
 
     gen = 0
     while gen < THRESHOLD and best_mse_val != 0:
-        parent_pool = build_parent_pool(mse, pool_size=NUM_FINCTIONS)
+        parent_pool = choose_rand_pop(mse, parent_size=NUM_FINCTIONS)
 
         new_functions = []
         for _ in range(NUM_FINCTIONS // 2):
             p1_idx = random.choice(parent_pool)
+            # candidates = [i for i in parent_pool if i != p1_idx]
+            # p2_idx = random.choice(candidates or [p1_idx])
             p2_idx = random.choice(parent_pool)
 
             t1 = clone_tree(functions[p1_idx])
@@ -443,7 +444,7 @@ y_cap = (y_scale * 1.1) + 1e-9
 
 ys_pred = []
 for x in xs:
-    y = eval_tree(best_tree, x)
+    y = compute_tree_output(best_tree, x)
     if (not math.isfinite(y)) or abs(y) > y_cap:
         y = float("nan")
     ys_pred.append(y)
